@@ -539,12 +539,27 @@ grammar Lexer is Keyword is export {
     regex comma                 { <[,]> }
     regex solidus               { <[/]> }
 
+    regex simple-comment-introducer {
+        <[-]> ** 2..*
+      | <[#]> +
+    }
+
+    regex bracketed-comment-introducer { "/*" }
+    regex bracketed-comment-terminator { "*/" }
+    regex bracketed-comment {
+        <bracketed-comment-introducer> .*? <bracketed-comment-terminator>
+    }
+
     token separator             { \s+ || <comment> }
     token comment               {
         <simple-comment>
-    # | <bracketed-comment>
+      | <bracketed-comment>
     }
-    token simple-comment        { <[-]> ** 2..* <comment-char>+ <[\n]> }
+    token simple-comment        {
+        <simple-comment-introducer>
+        <comment-char> *
+        <[\n]>
+    }
 
     token unsigned-integer      { <ascii-digit>+ }
     token signed-integer        { <[ + - ]>? <unsigned-integer> }
@@ -552,6 +567,7 @@ grammar Lexer is Keyword is export {
     token identifier-body       { <identifier-start> [ <identifier-part> | '_' ]* }
     token regular-identifier    { <identifier-body> }
 
+    token literal               { <signed-numeric-literal> | <general-literal> }
 
     token exact-numeric-literal {
         <unsigned-integer> [ '.' <unsigned-integer>? ]?
@@ -707,6 +723,10 @@ grammar Lexer is Keyword is export {
     token divide-operator                   { <solidus> }
     token greater-than-or-equals-operator   { <greater-than-operator> <equals-operator> }
     token less-than-or-equals-operator      { <less-than-operator> <equals-operator> }
+
+    # not in the SQL2003 bnf
+    regex backquote                         { '`' }
+    token quoted-label                      { <backquote> <regular-identifier> <backquote> }
 }
 
 grammar Basic is Lexer {
@@ -724,16 +744,18 @@ grammar Basic is Lexer {
         DROP [ <keyword> ]+ <regular-identifier>
     }
     rule generic-statement {
+        <keyword>
         [
-         || <keyword>
-         || <regular-identifier>
-         || <period>
-         || <general-literal>
-         || <left-paren>
-         || <right-paren>
-         || <comma>
-         || <operator-symbol>
-        ] +
+            <regular-identifier>
+          | <quoted-label>
+          | <period>
+          | <literal>
+          | <left-paren>
+          | <right-paren>
+          | <comma>
+          | <operator-symbol>
+          | <comment>
+        ]*
     }
 }
 
