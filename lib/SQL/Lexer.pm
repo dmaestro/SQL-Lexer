@@ -1,7 +1,8 @@
 #!/usr/bin/env perl6
 unit module SQL;
-
 use v6;
+
+# largely based on https://ronsavage.github.io/SQL/sql-2003-2.bnf
 
 grammar Keyword {
     token keyword               { <non-reserved-word> | <reserved-word> }
@@ -759,6 +760,7 @@ grammar Basic is Lexer {
     }
 }
 
+# some tokens not yet implemented
 #`{
     token schema-name {
         [ <catalog-name> '.' ]? <unqualified-schema-name>

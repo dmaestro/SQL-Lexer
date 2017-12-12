@@ -1,0 +1,19 @@
+{
+    "perl" : "6.c",
+    "name" : "SQL::Lexer",
+    "version" : "0.1.0",
+    "description" : "Grammar for lexical analysis of SQL",
+    "auth" : "dmaestro",
+    "authors" : [
+        "Douglas L. Schrag"
+    ],
+    "license" : "MIT",
+    "provides" : {
+        "SQL::Keyword" : "lib/SQL/Lexer.pm",
+        "SQL::Lexer"   : "lib/SQL/Lexer.pm",
+        "SQL::Basic"   : "lib/SQL/Basic.pm"
+    },
+    "depends" : [ ],
+    "resources" : [ ],
+    "source-url" : "git://github.com/dmaestro/SQL-Lexer.git"
+}
