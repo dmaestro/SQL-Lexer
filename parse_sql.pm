@@ -3,210 +3,10 @@ unit module SQL;
 
 use v6;
 
-grammar Lexer is export {
-    regex ascii-digit           { <:N> & <:Block(｢Basic Latin｣)> }
-#   regex SQL-special-char { <[ \x[0020] "%&'()*+,\-./:;<=>?[ \x[005D] ^_|{} ]> }
-#   regex SQL-language-char     { <ascii-digit> | <SQL-special-char> | <:L> }
-    regex identifier-start      { <:L> & <:Script<Latin>> }
-    regex identifier-part       { <identifier-start> | <ascii-digit> }
-    regex singlequote           { <[']> }
-    regex doublequote           { <["]> }
-    regex non-quote-char        { <-['"\n]> }
-    regex quote                 { <singlequote> | <doublequote> }
-    regex comment-char          { <quote> | <non-quote-char> }
-    regex char-representation {
-        <opening-quote><opening-quote> | <non-quote-char> | <+quote -opening-quote>
-    }
-    regex period                { <[.]> }
-    regex underscore            { <[_]> }
-    regex plus-sign             { <[+]> }
-    regex minus-sign            { <[-]> }
-    regex sign                  { <+plus-sign +minus-sign> }
-    regex left-paren            { <[(]> }
-    regex right-paren           { <[)]> }
-    regex colon                 { <[:]> }
-    regex comma                 { <[,]> }
-
-    token separator             { \s+ || <comment> }
-    token comment               {
-        <simple-comment>
-    # | <bracketed-comment>
-    }
-    token simple-comment        { <[-]> ** 2..* <comment-char>+ <[\n]> }
-
-    token unsigned-integer      { <ascii-digit>+ }
-    token signed-integer        { <[ + - ]>? <unsigned-integer> }
-
-    token identifier-body       { <identifier-start> [ <identifier-part> | '_' ]* }
-    token regular-identifier    { <identifier-body> }
-
-
-    token exact-numeric-literal {
-        <unsigned-integer> [ '.' <unsigned-integer>? ]?
-      | '.' <unsigned-integer>
-    }
-    token approximate-numeric-literal {
-        <exact-numeric-literal> E <signed-integer>
-    }
-    token unsigned-numeric-literal {
-        <exact-numeric-literal> | <exact-numeric-literal>
-    }
-    token signed-numeric-literal {
-        <[ + - ]>? <unsigned-numeric-literal>
-    }
-
-    token char-string-literal-base {
-        $<opening-quote>=<quote> <char-representation>* $<opening-quote>
-    }
-    token char-string-literal {
-        [ '_' <char-set-spec> ] ?
-        <char-string-literal-base>
-        [ <separator> <char-string-literal-base> ]*
-    }
-    token national-char-string-literal {
-        N <char-string-literal-base>
-        [ <separator> <quote> <char-string-literal-base> ]*
-    }
-
-    token datetime-literal { <date-literal> | <time-literal> | <timestamp-literal> }
-
-    rule date-literal { DATE <date-string> }
-    rule time-literal { TIME <time-string> }
-    rule timestamp-literal { TIMESTAMP <timestamp-string> }
-    token date-string {
-        $<opening-quote>=<quote> <unquoted-date-string> $<opening-quote>
-    }
-    token time-string {
-        $<opening-quote>=<quote> <unquoted-time-string> $<opening-quote>
-    }
-    token timestamp-string {
-        $<opening-quote>=<quote> <unquoted-timestamp-string> $<opening-quote>
-    }
-    token unquoted-date-string      { <date-value> }
-    token unquoted-time-string      { <time-value> <time-zone-interval>? }
-    token unquoted-timestamp-string { <unquoted-date-string> <space> <unquoted-time-string> }
-    token date-value {
-        <years-value> <minus-sign> <months-value> <minus-sign> <days-value>
-    }
-    token time-value {
-        <hours-value> <minus-sign> <minutes-value> <minus-sign> <seconds-value>
-    }
-    token time-zone-interval {
-        <sign> <hours value> <colon> <minutes value>
-    }
-
-    rule interval-literal { INTERVAL <sign>? <interval-string> <interval-qualifier> }
-    token interval-string {
-        $<opening-quote>=<quote> <unquoted-interval-string> $<opening-quote>
-    }
-    token unquoted-interval-string  { <sign>? [ <year-month-literal> | <day-time-literal> ] }
-    token year-month-literal { <years-value> | [ <years-value> <minus-sign> ]? <months-value> }
-    token day-time-literal { <day-time-interval> | <time-interval> }
-    token day-time-interval {
-        <days-value> [ <space> <basic-time-interval> ]?
-    }
-    token full-time-interval {
-        <hours-value> [
-        <colon> <minutes-value> [
-        <colon> <seconds-value>
-        ]? ]?
-    }
-    token time-interval {
-        <full-time-interval>
-     || <minutes-value> [ <colon> <seconds-value> ]?
-     || <seconds-value>
-    }
-    token years-value   { <unsigned-integer> }
-    token months-value  { <unsigned-integer> }
-    token days-value    { <unsigned-integer> }
-    token hours-value   { <unsigned-integer> }
-    token minutes-value { <unsigned-integer> }
-    token seconds-value { <unsigned-integer> [ <period> [ <unsigned-integer> ]? ]? }
-    rule interval-qualifier {
-        <start-field> TO <end-field>
-     || <single-datetime-field>
-    }
-    token start-field {
-        <non-second-primary-datetime-field> [
-            <left-paren> <interval-leading-field-precision> <right-paren>
-        ]?
-    }
-    token end-field {
-        <non-second-primary-datetime-field>
-     || SECOND [
-            <left-paren> <interval-fractional-seconds-precision> <right-paren>
-        ]?
-    }
-    token single-datetime-field {
-        <non-second-primary-datetime-field>
-     || SECOND [
-            <left-paren> <interval-leading-field-precision> [
-                <comma> <interval-fractional-seconds-precision>
-            ]?
-            <right-paren>
-        ]?
-    }
-    token primary-datetime-field {
-        <non-second-primary-datetime-field>
-     || SECOND
-    }
-    token non-second-primary-datetime-field {
-        YEAR
-     || MONTH
-     || DAY
-     || HOUR
-     || MINUTE
-    }
-    token interval-leading-field-precision      { <unsigned-integer> }
-    token interval-fractional-seconds-precision { <unsigned-integer> }
-
-    token boolean-literal { TRUE || FALSE || UNKNOWN }
-
-    token general-literal {
-        <char-string-literal>
-      | <national-char-string-literal>
-    # | <Unicode-char-string-literal>
-    # | <binary-string-literal>
-      | <datetime-literal>
-      | <interval-literal>
-      | <boolean-literal>
-    }
-}
-
-
-#`{
-    token schema-name {
-        [ <catalog-name> '.' ]? <unqualified-schema-name>
-    }
-
-    token char-set-spec {
-        <standard-char-set-name>
-    # | <implementation-defined-char-set-name>
-    # | <user-defined-char-set-name>
-    }
-
-    token standard-char-set-name {
-        <character-set-name>
-    }
-
-    token character-set-name {
-        <schema-name> '.' <SQL-language-identifier>
-    }
-
+grammar Keyword {
     token keyword               { <non-reserved-word> | <reserved-word> }
 
-    token nondelimiter-token {
-        <regular-identifier>
-      | <keyword>
-      | <unsigned-numeric-literal>
-      | <national-char-string-literal>
-    # | <bit-string-literal>
-    # | <hex-string-literal>
-    # | <large-object-length-token>
-    # | <multiplier>
-    }
-
-    token non-reserverd-word {
+    token non-reserved-word {
         A
       | ABS
       | ABSOLUTE
@@ -309,6 +109,7 @@ grammar Lexer is export {
       | GOTO
       | GRANTED
       | HIERARCHY
+      | IF
       | IMPLEMENTATION
       | INCLUDING
       | INCREMENT
@@ -710,4 +511,257 @@ grammar Lexer is export {
     }
 }
 
+grammar Lexer is Keyword is export {
+    regex ascii-digit           { <:N> & <:Block(｢Basic Latin｣)> }
+#   regex SQL-special-char { <[ \x[0020] "%&'()*+,\-./:;<=>?[ \x[005D] ^_|{} ]> }
+#   regex SQL-language-char     { <ascii-digit> | <SQL-special-char> | <:L> }
+    regex identifier-start      { <:L> & <:Script<Latin>> }
+    regex identifier-part       { <identifier-start> | <ascii-digit> }
+    regex singlequote           { <[']> }
+    regex doublequote           { <["]> }
+    regex non-quote-char        { <-['"\n]> }
+    regex quote                 { <singlequote> | <doublequote> }
+    regex comment-char          { <quote> | <non-quote-char> }
+    regex char-representation {
+        $<opening-quote>$<opening-quote> | <non-quote-char> | [ <quote> <!after $<opening-quote>> ]
+    }
+    regex period                { <[.]> }
+    regex underscore            { <[_]> }
+    regex plus-sign             { <[+]> }
+    regex minus-sign            { <[-]> }
+    regex sign                  { <+plus-sign +minus-sign> }
+    regex left-paren            { <[(]> }
+    regex right-paren           { <[)]> }
+    regex colon                 { <[:]> }
+    regex semicolon             { <[;]> }
+    regex comma                 { <[,]> }
+    regex solidus               { <[/]> }
+
+    token separator             { \s+ || <comment> }
+    token comment               {
+        <simple-comment>
+    # | <bracketed-comment>
+    }
+    token simple-comment        { <[-]> ** 2..* <comment-char>+ <[\n]> }
+
+    token unsigned-integer      { <ascii-digit>+ }
+    token signed-integer        { <[ + - ]>? <unsigned-integer> }
+
+    token identifier-body       { <identifier-start> [ <identifier-part> | '_' ]* }
+    token regular-identifier    { <identifier-body> }
+
+
+    token exact-numeric-literal {
+        <unsigned-integer> [ '.' <unsigned-integer>? ]?
+      | '.' <unsigned-integer>
+    }
+    token approximate-numeric-literal {
+        <exact-numeric-literal> E <signed-integer>
+    }
+    token unsigned-numeric-literal {
+        <exact-numeric-literal> | <exact-numeric-literal>
+    }
+    token signed-numeric-literal {
+        <[ + - ]>? <unsigned-numeric-literal>
+    }
+
+    token char-string-literal-base {
+        $<opening-quote>=<quote> <char-representation>* $<opening-quote>
+    }
+    token char-string-literal {
+        [ '_' <char-set-spec> ] ?
+        <char-string-literal-base>
+        [ <separator> <char-string-literal-base> ]*
+    }
+    token national-char-string-literal {
+        N <char-string-literal-base>
+        [ <separator> <quote> <char-string-literal-base> ]*
+    }
+
+    token datetime-literal { <date-literal> | <time-literal> | <timestamp-literal> }
+
+    rule date-literal { DATE <date-string> }
+    rule time-literal { TIME <time-string> }
+    rule timestamp-literal { TIMESTAMP <timestamp-string> }
+    token date-string {
+        $<opening-quote>=<quote> <unquoted-date-string> $<opening-quote>
+    }
+    token time-string {
+        $<opening-quote>=<quote> <unquoted-time-string> $<opening-quote>
+    }
+    token timestamp-string {
+        $<opening-quote>=<quote> <unquoted-timestamp-string> $<opening-quote>
+    }
+    token unquoted-date-string      { <date-value> }
+    token unquoted-time-string      { <time-value> <time-zone-interval>? }
+    token unquoted-timestamp-string { <unquoted-date-string> <space> <unquoted-time-string> }
+    token date-value {
+        <years-value> <minus-sign> <months-value> <minus-sign> <days-value>
+    }
+    token time-value {
+        <hours-value> <minus-sign> <minutes-value> <minus-sign> <seconds-value>
+    }
+    token time-zone-interval {
+        <sign> <hours value> <colon> <minutes value>
+    }
+
+    rule interval-literal { INTERVAL <sign>? <interval-string> <interval-qualifier> }
+    token interval-string {
+        $<opening-quote>=<quote> <unquoted-interval-string> $<opening-quote>
+    }
+    token unquoted-interval-string  { <sign>? [ <year-month-literal> | <day-time-literal> ] }
+    token year-month-literal { <years-value> | [ <years-value> <minus-sign> ]? <months-value> }
+    token day-time-literal { <day-time-interval> | <time-interval> }
+    token day-time-interval {
+        <days-value> [ <space> <basic-time-interval> ]?
+    }
+    token full-time-interval {
+        <hours-value> [
+        <colon> <minutes-value> [
+        <colon> <seconds-value>
+        ]? ]?
+    }
+    token time-interval {
+        <full-time-interval>
+     || <minutes-value> [ <colon> <seconds-value> ]?
+     || <seconds-value>
+    }
+    token years-value   { <unsigned-integer> }
+    token months-value  { <unsigned-integer> }
+    token days-value    { <unsigned-integer> }
+    token hours-value   { <unsigned-integer> }
+    token minutes-value { <unsigned-integer> }
+    token seconds-value { <unsigned-integer> [ <period> [ <unsigned-integer> ]? ]? }
+    rule interval-qualifier {
+        <start-field> TO <end-field>
+     || <single-datetime-field>
+    }
+    token start-field {
+        <non-second-primary-datetime-field> [
+            <left-paren> <interval-leading-field-precision> <right-paren>
+        ]?
+    }
+    token end-field {
+        <non-second-primary-datetime-field>
+     || SECOND [
+            <left-paren> <interval-fractional-seconds-precision> <right-paren>
+        ]?
+    }
+    token single-datetime-field {
+        <non-second-primary-datetime-field>
+     || SECOND [
+            <left-paren> <interval-leading-field-precision> [
+                <comma> <interval-fractional-seconds-precision>
+            ]?
+            <right-paren>
+        ]?
+    }
+    token primary-datetime-field {
+        <non-second-primary-datetime-field>
+     || SECOND
+    }
+    token non-second-primary-datetime-field {
+        YEAR
+     || MONTH
+     || DAY
+     || HOUR
+     || MINUTE
+    }
+    token interval-leading-field-precision      { <unsigned-integer> }
+    token interval-fractional-seconds-precision { <unsigned-integer> }
+
+    token boolean-literal { TRUE || FALSE || UNKNOWN }
+
+    token general-literal {
+        <char-string-literal>
+      | <national-char-string-literal>
+    # | <Unicode-char-string-literal>
+    # | <binary-string-literal>
+      | <datetime-literal>
+      | <interval-literal>
+      | <boolean-literal>
+    }
+
+    token operator-symbol {
+        <equals-operator>
+     || <non-equals-operator>
+     || <less-than-operator>
+     || <greater-than-operator>
+     || <plus-operator>
+     || <minus-operator>
+     || <multiply-operator>
+     || <divide-operator>
+     || <greater-than-or-equals-operator>
+     || <less-than-or-equals-operator>
+    }
+    token equals-operator                   { '=' }
+    token non-equals-operator               { '!=' }
+    token less-than-operator                { '<' }
+    token greater-than-operator             { '>' }
+    token plus-operator                     { <plus-sign> }
+    token minus-operator                    { <minus-sign> }
+    token multiply-operator                 { '*' }
+    token divide-operator                   { <solidus> }
+    token greater-than-or-equals-operator   { <greater-than-operator> <equals-operator> }
+    token less-than-or-equals-operator      { <less-than-operator> <equals-operator> }
+}
+
+grammar Basic is Lexer {
+    rule TOP {
+        \s*
+        [   <comment>
+         || <statement> <semicolon>
+        ] +
+    }
+    rule statement {
+        <drop-statement>
+     || <generic-statement>
+    }
+    rule drop-statement {
+        DROP [ <keyword> ]+ <regular-identifier>
+    }
+    rule generic-statement {
+        [
+         || <keyword>
+         || <regular-identifier>
+         || <period>
+         || <general-literal>
+         || <left-paren>
+         || <right-paren>
+         || <comma>
+         || <operator-symbol>
+        ] +
+    }
+}
+
+#`{
+    token schema-name {
+        [ <catalog-name> '.' ]? <unqualified-schema-name>
+    }
+
+    token char-set-spec {
+        <standard-char-set-name>
+    # | <implementation-defined-char-set-name>
+    # | <user-defined-char-set-name>
+    }
+
+    token standard-char-set-name {
+        <character-set-name>
+    }
+
+    token character-set-name {
+        <schema-name> '.' <SQL-language-identifier>
+    }
+
+    token nondelimiter-token {
+        <regular-identifier>
+      | <keyword>
+      | <unsigned-numeric-literal>
+      | <national-char-string-literal>
+    # | <bit-string-literal>
+    # | <hex-string-literal>
+    # | <large-object-length-token>
+    # | <multiplier>
+    }
+}
 
