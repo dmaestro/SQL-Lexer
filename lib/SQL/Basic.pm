@@ -20,6 +20,7 @@ grammar Basic is Lexer {
         <keyword>
         [
             <regular-identifier>
+          | <keyword>
           | <quoted-label>
           | <period>
           | <literal>

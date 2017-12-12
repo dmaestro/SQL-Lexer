@@ -363,6 +363,7 @@ grammar Keyword {
       | IDENTITY
       | IMMEDIATE
       | IN
+      | INDEX
       | INDICATOR
       | INNER
       | INOUT
