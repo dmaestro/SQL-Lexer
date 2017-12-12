@@ -42,7 +42,7 @@ lexical constructs of SQL.
 * `interval-literal`
 * `boolean-literal`
 
-## Operators ##
+### Operators ###
 
 * `operator-symbol`
 * `equals-operator`
@@ -56,7 +56,7 @@ lexical constructs of SQL.
 * `greater-than-or-equals-operator`
 * `less-than-or-equals-operator`
 
-## Identifiers ##
+### Identifiers ###
 
 * `quoted-label` quoted with backtick
 * `regular-identifier`
