@@ -512,6 +512,8 @@ grammar Keyword {
 }
 
 grammar Lexer is Keyword is export {
+    my Str $oq;
+
     regex ascii-digit           { <:N> & <:Block(｢Basic Latin｣)> }
 #   regex SQL-special-char { <[ \x[0020] "%&'()*+,\-./:;<=>?[ \x[005D] ^_|{} ]> }
 #   regex SQL-language-char     { <ascii-digit> | <SQL-special-char> | <:L> }
@@ -523,7 +525,7 @@ grammar Lexer is Keyword is export {
     regex quote                 { <singlequote> | <doublequote> }
     regex comment-char          { <quote> | <non-quote-char> }
     regex char-representation {
-        $<opening-quote>$<opening-quote> | <non-quote-char> | [ <quote> <!after $<opening-quote>> ]
+        $($oq) $($oq) | <non-quote-char> | [ <quote> <!after $($oq) > ]
     }
     regex period                { <[.]> }
     regex underscore            { <[_]> }
@@ -564,9 +566,10 @@ grammar Lexer is Keyword is export {
     token signed-numeric-literal {
         <[ + - ]>? <unsigned-numeric-literal>
     }
-
     token char-string-literal-base {
-        $<opening-quote>=<quote> <char-representation>* $<opening-quote>
+        $<opening-quote>=<quote>  { $oq = $<opening-quote>.Str }
+        <char-representation>*
+        $($<opening-quote>)
     }
     token char-string-literal {
         [ '_' <char-set-spec> ] ?
