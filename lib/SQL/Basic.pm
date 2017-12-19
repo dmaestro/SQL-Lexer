@@ -2,7 +2,7 @@ unit module SQL;
 use v6;
 use SQL::Lexer;
 
-grammar Basic is Lexer {
+grammar Basic:ver<0.1.2> is Lexer:ver<0.1.2..*> {
     rule TOP {
         \s*
         [   <comment>
@@ -22,6 +22,7 @@ grammar Basic is Lexer {
             <regular-identifier>
           | <keyword>
           | <quoted-label>
+          | <variable>
           | <period>
           | <literal>
           | <left-paren>

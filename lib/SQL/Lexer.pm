@@ -3,7 +3,7 @@ use v6;
 
 # largely based on https://ronsavage.github.io/SQL/sql-2003-2.bnf
 
-grammar Keyword {
+grammar Keyword:ver<0.1.1> {
     token keyword               { <non-reserved-word> | <reserved-word> }
 
     token non-reserved-word {
@@ -512,7 +512,7 @@ grammar Keyword {
     }
 }
 
-grammar Lexer is Keyword is export {
+grammar Lexer:ver<0.1.2> is Keyword is export {
     my Str $oq;
 
     regex ascii-digit           { <:N> & <:Block(｢Basic Latin｣)> }
@@ -728,6 +728,13 @@ grammar Lexer is Keyword is export {
     # not in the SQL2003 bnf
     regex backquote                         { '`' }
     token quoted-label                      { <backquote> <regular-identifier> <backquote> }
+
+    token variable                          {
+        [ <system-variable-sigil> | <session-variable-sigil> ]
+        <regular-identifier>
+    }
+    regex system-variable-sigil             { '@@' }
+    regex session-variable-sigil            { '@' }
 }
 
 # some tokens not yet implemented
