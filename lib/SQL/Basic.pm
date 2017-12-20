@@ -2,7 +2,7 @@ unit module SQL;
 use v6;
 use SQL::Lexer;
 
-grammar Basic:ver<0.1.2> is Lexer:ver<0.1.2..*> {
+grammar Basic:ver<0.2.0> is Lexer:ver<0.2.0..*> {
     rule TOP {
         \s*
         [   <comment>
@@ -13,23 +13,32 @@ grammar Basic:ver<0.1.2> is Lexer:ver<0.1.2..*> {
         <drop-statement>
      || <generic-statement>
     }
+    rule compound-statement {
+        BEGIN
+            [   <comment>
+             || <statement> <semicolon>
+            ] +
+        END
+    }
     rule drop-statement {
         DROP [ <keyword> ]+ <regular-identifier>
     }
     rule generic-statement {
         <keyword>
-        [
-            <regular-identifier>
-          | <keyword>
-          | <quoted-label>
-          | <variable>
-          | <period>
-          | <literal>
-          | <left-paren>
-          | <right-paren>
-          | <comma>
-          | <operator-symbol>
-          | <comment>
+        [ <compound-statement>
+         || [   <regular-identifier>
+              | <keyword>
+              | <quoted-label>
+              | <variable>
+              | <compound-statement>
+              | <period>
+              | <literal>
+              | <left-paren>
+              | <right-paren>
+              | <comma>
+              | <operator-symbol>
+              | <comment>
+            ]
         ]*
     }
 }
