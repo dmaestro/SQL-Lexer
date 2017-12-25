@@ -18,7 +18,7 @@ grammar Basic:ver<0.2.0> is Lexer:ver<0.2.0..*> {
             [   <comment>
              || <statement> <semicolon>
             ] +
-        END
+    :!s END
     }
     rule drop-statement {
         DROP [ <keyword> ]+ <regular-identifier>
