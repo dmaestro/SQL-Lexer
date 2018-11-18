@@ -1,5 +1,5 @@
-unit module SQL;
 use v6;
+unit module SQL;
 
 # largely based on https://ronsavage.github.io/SQL/sql-2003-2.bnf
 
