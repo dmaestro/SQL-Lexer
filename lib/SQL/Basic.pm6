@@ -17,7 +17,7 @@ grammar Basic:ver<0.2.2> is Lexer {
         BEGIN
             [   <comment>
              || <statement> <semicolon>
-            ] +
+            ] +!
     :!s END
     }
     rule drop-statement {
